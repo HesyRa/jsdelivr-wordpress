@@ -63,7 +63,7 @@ class JsdelivrTable extends WP_List_Table {
 
 		switch ( $column_name ) {
 			case 'original_url':
-				$show_action = 'activate';
+				/*$show_action = 'activate';
 
 				$actions = [
 					'deactivate' => sprintf( '<span class="deactivate"><a href="?page=%s&action=%s&source_list[]=%s">%s</a></span>', 'jsdelivrcdn', 'deactivate', $item['id'], __( 'Deactivate' ) ),
@@ -75,6 +75,8 @@ class JsdelivrTable extends WP_List_Table {
 				}
 
 				return sprintf( '<strong>%s</strong><div class="row-actions visible">%s</div>', $item[ $column_name ], $actions[ $show_action ] );
+				*/
+				return $item[ $column_name ];
 			default:
 				return $item[ $column_name ];
 		}
