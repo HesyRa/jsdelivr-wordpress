@@ -33,3 +33,24 @@
 		transform: rotate(360deg);
 	}
 }
+
+.jsdelivrcdn-settings-wrapper {
+	float: left;
+	margin-right: 40px;
+	background: #fff;
+}
+
+.jsdelivrcdn-description-wrapper {
+	padding-top: 0.1px;
+}
+
+.jsdelivrcdn-setttings-options-title {
+	border-bottom: 1px solid #ccc;
+	padding: 0 20px;
+	margin-bottom: 0;
+	padding-bottom: 20px;
+}
+
+.jsdelivrcdn-settings-form {
+	padding: 0 20px;
+}

@@ -33,6 +33,10 @@ class JsDelivrCdn {
 
 	const COMMENT_PATTERN = '/\/\*[\s\S]*?\*\/|\/\/.*?(?:\n|$)/';
 
+	const SYNCED_DESCRIPTION = 'This will ensure the plugin keeps synced and automaticaly finds and replaces new files with the CDN alternatives. Make sure its enabled to keep getting the benefit of jsDelivr without worrying about syncing your changes after website changes. Recomended to keep in on!';
+
+	const ADVANCED_MODE_DESCRIPTION = ' This will allow to clear or delete files below';
+
 	/**
 	 * Set true when plugin initialized
 	 *
@@ -341,11 +345,13 @@ class JsDelivrCdn {
 
 		if ( ! isset( self::$options[ self::SOURCE_LIST ][ $index ] ) ) {
 			self::$options[ self::SOURCE_LIST ][ $index ] = [
+				'id'                      => $index,
 				'handle'                  => $source,
 				self::JSDELIVR_SOURCE_URL => '',
 				self::ORIGINAL_SOURCE_URL => self::get_file_path( $source->src ),
 				'active'                  => self::$options[ self::AUTOENABLE ],
 				self::SOURCE_LAST_LOADED  => time(),
+				'type'                    => $type,
 			];
 
 			$updated = true;
@@ -459,24 +465,24 @@ class JsDelivrCdn {
 		register_setting( self::PLUGIN_SETTINGS, self::PLUGIN_SETTINGS );
 		add_settings_section( self::PLUGIN_SETTINGS, '', '', 'main_settings' );
 		add_settings_field(
-			self::ADVANCED_MODE,
-			'Advanced mode',
+			self::AUTOENABLE,
+			'Automatically enable<p class="description">' . self::SYNCED_DESCRIPTION . '</p>',
 			function() {
 				?>
-			<input id="<?php echo esc_attr( self::ADVANCED_MODE ); ?>" <?php echo esc_attr( self::$options[ self::ADVANCED_MODE ] ? 'checked' : '' ); ?>
-			type="checkbox" name="<?php echo esc_attr( self::ADVANCED_MODE ); ?>" title="Advanced mode">
+				<input id="<?php echo esc_attr( self::AUTOENABLE ); ?>" <?php echo esc_attr( self::$options[ self::AUTOENABLE ] ? 'checked' : '' ); ?>
+				type="checkbox" name="<?php echo esc_attr( self::AUTOENABLE ); ?>" title="Automatically enable">
 				<?php
 			},
 			'main_settings',
 			self::PLUGIN_SETTINGS
 		);
 		add_settings_field(
-			self::AUTOENABLE,
-			'Automatically enable',
+			self::ADVANCED_MODE,
+			'Advanced mode<p class="description">' . self::ADVANCED_MODE_DESCRIPTION . '</p>',
 			function() {
 				?>
-			<input id="<?php echo esc_attr( self::AUTOENABLE ); ?>" <?php echo esc_attr( self::$options[ self::AUTOENABLE ] ? 'checked' : '' ); ?>
-			type="checkbox" name="<?php echo esc_attr( self::AUTOENABLE ); ?>" title="Automatically enable">
+			<input id="<?php echo esc_attr( self::ADVANCED_MODE ); ?>" <?php echo esc_attr( self::$options[ self::ADVANCED_MODE ] ? 'checked' : '' ); ?>
+			type="checkbox" name="<?php echo esc_attr( self::ADVANCED_MODE ); ?>" title="Advanced mode">
 				<?php
 			},
 			'main_settings',
@@ -514,6 +520,8 @@ class JsDelivrCdn {
 
 	/**
 	 * Ajax action remove one row
+	 *
+	 * @TODO REMOVE AJAX VERSION
 	 */
 	public static function clear_source() {
 		check_ajax_referer( JSDELIVRCDN_PLUGIN_NAME, 'security' );
@@ -538,28 +546,29 @@ class JsDelivrCdn {
 	}
 
 	/**
+	 * Clear source by id
+	 *
+	 * @param array $handle_arr array of identifiers.
+	 */
+	public static function clear_sources( $handle_arr ) {
+		if ( ! empty( $handle_arr ) ) {
+			foreach ( $handle_arr as $handle ) {
+				if ( isset( self::$options[ self::SOURCE_LIST ][ $handle ] ) ) {
+					self::$options[ self::SOURCE_LIST ][ $handle ][ self::JSDELIVR_SOURCE_URL ] = '';
+
+				}
+			}
+			update_option( self::PLUGIN_SETTINGS, self::$options );
+		}
+	}
+
+	/**
 	 * Ajax Get saved data
 	 */
 	public static function get_source_list() {
 		check_ajax_referer( JSDELIVRCDN_PLUGIN_NAME, 'security' );
 
-		$data = [];
-		foreach ( self::$options[ self::SOURCE_LIST ] as $index => $source ) {
-			if ( time() - $source[ self::SOURCE_LAST_LOADED ] <= 60 * 60 * 24 || self::$options[ self::ADVANCED_MODE ] ) {
-				if ( $source[ self::ORIGINAL_SOURCE_URL ] ) {
-					$data[ $index ] = [
-						'original_url' => $source[ self::ORIGINAL_SOURCE_URL ],
-						'jsdelivr_url' => $source[ self::JSDELIVR_SOURCE_URL ],
-						'active'       => $source['active'],
-					];
-					if ( self::$options[ self::ADVANCED_MODE ] ) {
-						$data[ $index ]['ver'] = $source['handle']->ver;
-
-						$data[ $index ]['handle'] = $source['handle']->handle;
-					}
-				}
-			}
-		}
+		$data = self::get_source();
 
 		echo wp_json_encode(
 			[
@@ -569,6 +578,36 @@ class JsDelivrCdn {
 		);
 
 		wp_die();
+	}
+
+	/**
+	 * Get source data
+	 *
+	 * @return array
+	 */
+	public static function get_source() {
+		$data = [];
+		foreach ( self::$options[ self::SOURCE_LIST ] as $index => $source ) {
+			if ( time() - $source[ self::SOURCE_LAST_LOADED ] <= 60 * 60 * 24 || self::$options[ self::ADVANCED_MODE ] ) {
+				if ( $source[ self::ORIGINAL_SOURCE_URL ] ) {
+					$arr = [
+						'id'                      => $source['id'],
+						self::ORIGINAL_SOURCE_URL => $source[ self::ORIGINAL_SOURCE_URL ],
+						self::JSDELIVR_SOURCE_URL => $source[ self::JSDELIVR_SOURCE_URL ],
+						'active'                  => $source['active'],
+						'type'                    => $source['type'],
+					];
+					if ( self::$options[ self::ADVANCED_MODE ] ) {
+						$arr['ver'] = $source['handle']->ver;
+
+						$arr['handle'] = $source['handle']->handle;
+					}
+					$data[] = $arr;
+				}
+			}
+		}
+
+		return $data;
 	}
 
 	/**
@@ -735,5 +774,14 @@ class JsDelivrCdn {
 		return [
 			'headers' => [ 'User-Agent' => 'jsDelivr WP plugin/' . self::$jsdelivr_plugin_version ],
 		];
+	}
+
+	/**
+	 * Check is advanced mode enabled
+	 *
+	 * @return mixed
+	 */
+	public static function is_advance_mode() {
+		return self::$options[ self::ADVANCED_MODE ];
 	}
 }

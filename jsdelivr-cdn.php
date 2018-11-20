@@ -63,6 +63,7 @@ add_filter(
  * Include JsdelivrCdn class
  */
 require_once JSDELIVRCDN_PLUGIN_PATH . 'classes/class-jsdelivrcdn.php';
+require_once JSDELIVRCDN_PLUGIN_PATH . 'classes/class-jsdelivrtable.php';
 
 /** Activation */
 register_activation_hook( __FILE__, array( 'JsDelivrCdn', 'activate' ) );

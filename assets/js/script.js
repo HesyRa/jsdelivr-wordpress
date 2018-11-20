@@ -254,7 +254,7 @@ jQuery( document ).ready( function( $ ) {
 					$.each( response.data, function( index, data ) {
 						i++;
 						$tr = $( '<tr></tr>' )
-							.attr( 'id', index )
+							.attr( 'id', data.id )
 							.appendTo( _self.$tableBody );
 
 						//Number
@@ -264,7 +264,7 @@ jQuery( document ).ready( function( $ ) {
 							.appendTo( $tr );
 
 						//Active
-						html = '<input name="source_list[' + index + ']" data-index="' + index + '" type="checkbox" ' +
+						html = '<input name="source_list[' + data.id + ']" data-index="' + data.id + '" type="checkbox" ' +
 							'title="Active" value="1" ' + ( data.active ? 'checked' : '' ) + '>';
 						$td = $( '<td></td>' )
 							.addClass( 'check-column text-center' )
