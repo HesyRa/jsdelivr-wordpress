@@ -14,16 +14,6 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  */
 class JsdelivrTable extends WP_List_Table {
 	/**
-	 * JsdelivrTable constructor.
-	 */
-	public function __construct() {
-		parent::__construct( array(
-			'singular' => JsDelivrCdn::SOURCE_LIST,
-			'ajax'     => true,
-		) );
-	}
-
-	/**
 	 * Get table classes
 	 *
 	 * @return string
@@ -33,6 +23,7 @@ class JsdelivrTable extends WP_List_Table {
 		$classes = str_replace( 'fixed', '', $classes );
 		return $classes;
 	}
+
 	/**
 	 * Get table columns
 	 *
@@ -58,7 +49,7 @@ class JsdelivrTable extends WP_List_Table {
 	 * @return string
 	 */
 	public function column_cb( $item ) {
-		return sprintf( '<input type="checkbox" name="%1$s[]" value="%2$s" />', $this->_args['singular'], $item['id'] );
+		return sprintf( '<input type="checkbox" name="%1$s[]" value="%2$s" />', JsDelivrCdn::SOURCE_LIST, $item['id'] );
 	}
 
 	/**
@@ -118,11 +109,13 @@ class JsdelivrTable extends WP_List_Table {
 	 */
 	public function get_bulk_actions() {
 		$actions = array(
-			'delete'     => __( 'Delete' ),
-			'clear'      => __( 'Clear' ),
 			'activate'   => __( 'Activate' ),
 			'deactivate' => __( 'Deactivate' ),
 		);
+		if ( JsDelivrCdn::is_advance_mode() ) {
+			$actions['clear']  = __( 'Clear' );
+			$actions['delete'] = __( 'Delete' );
+		}
 		return $actions;
 	}
 
@@ -136,19 +129,31 @@ class JsdelivrTable extends WP_List_Table {
 		if ( isset( $_REQUEST['_wpnonce'] ) ) {
 			wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-' . $this->_args['plural'] );
 		}
-		if ( $action ) {
+		$handle_arr = [];
+		if ( isset( $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) && ! empty( $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) ) {
+			$handle_arr =  array_map( 'sanitize_text_field', array_map( 'wp_unslash', $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) );
+		}
+
+		if ( $action && ! empty( $handle_arr ) ) {
 			switch ( $action ) {
 				case 'clear':
-					if ( isset( $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) && ! empty( $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) ) {
-						JsDelivrCdn::clear_sources( array_map( 'sanitize_text_field', array_map( 'wp_unslash', $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) ) );
-					}
+					JsDelivrCdn::clear_sources( $handle_arr );
+					break;
+				case 'delete':
+					JsDelivrCdn::remove_sources( $handle_arr );
+					break;
+				case 'activate':
+					JsDelivrCdn::activate_sources( $handle_arr );
+					break;
+				case 'deactivate':
+					JsDelivrCdn::deactivate_sources( $handle_arr );
 					break;
 				default:
 					wp_die( esc_attr( $action ) );
 			}
 		}
-
 	}
+
 	/**
 	 * Set table items
 	 */
@@ -156,7 +161,7 @@ class JsdelivrTable extends WP_List_Table {
 		/**
 		 * How many records for page do you want to show?
 		 */
-		$per_page = 10;
+		$per_page = 5;
 		/**
 		 * Define of column_headers. It's an array that contains:
 		 * columns of List Table
@@ -177,14 +182,20 @@ class JsdelivrTable extends WP_List_Table {
 		 */
 		$this->process_bulk_action();
 
-		/**
-		 * Get Items From Plugin
-		 */
-		$data = JsDelivrCdn::get_source();
-
 		if ( isset( $_REQUEST['_wpnonce'] ) ) {
 			wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-' . $this->_args['plural'] );
 		}
+
+		$orderby = ( ! empty( $_REQUEST['orderby'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'original_url';
+
+		$order = ( ! empty( $_REQUEST['order'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['order'] ) ) : 'asc';
+
+		$filter = ( ! empty( $_REQUEST['filter'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['filter'] ) ) : '';
+
+		/**
+		 * Get Items From Plugin
+		 */
+		$data = JsDelivrCdn::get_source( $filter );
 
 		/**
 		 * Sort items
@@ -214,9 +225,6 @@ class JsdelivrTable extends WP_List_Table {
 
 		$this->items = $data;
 
-		$orderby = ( ! empty( $_REQUEST['orderby'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'original_url';
-
-		$order = ( ! empty( $_REQUEST['order'] ) ) ? sanitize_text_field( wp_unslash( $_REQUEST['order'] ) ) : 'asc';
 		/**
 		 * Call to _set_pagination_args method for informations about
 		 * total items, items for page, total pages and ordering
@@ -228,58 +236,23 @@ class JsdelivrTable extends WP_List_Table {
 				'total_pages' => ceil( $total_items / $per_page ),
 				'orderby'     => $orderby,
 				'order'       => $order,
+				'filter'      => $filter,
 			)
 		);
 	}
 
 	/**
-	 * Ajax response
+	 * Get views
+	 *
+	 * @return array
 	 */
-	/*public function ajax_response() {
-		check_ajax_referer( 'ajax-custom-list-nonce', '_ajax_custom_list_nonce' );
-		$this->prepare_items();
-
-		extract( $this->_args );
-		extract( $this->_pagination_args, EXTR_SKIP );
-
-		ob_start();
-		if ( ! empty( $_REQUEST['no_placeholder'] ) ) {
-			$this->display_rows();
-		} else {
-			$this->display_rows_or_placeholder();
-		}
-		$rows = ob_get_clean();
-
-		ob_start();
-		$this->print_column_headers();
-		$headers = ob_get_clean();
-
-		ob_start();
-		$this->pagination( 'top' );
-		$pagination_top = ob_get_clean();
-
-		ob_start();
-		$this->pagination( 'bottom' );
-		$pagination_bottom = ob_get_clean();
-
-		$response = array( 'rows' => $rows );
-
-		$response['pagination']['top'] = $pagination_top;
-
-		$response['pagination']['bottom'] = $pagination_bottom;
-
-		$response['column_headers'] = $headers;
-
-		if ( isset( $total_items ) ) {
-			$response['total_items_i18n'] = sprintf( _n( '1 item', '%s items', $total_items ), number_format_i18n( $total_items ) );
-		}
-
-		if ( isset( $total_pages ) ) {
-			$response['total_pages'] = $total_pages;
-
-			$response['total_pages_i18n'] = number_format_i18n( $total_pages );
-		}
-
-		die( wp_json_encode( $response ) );
-	} */
+	protected function get_views() {
+		return [
+			'all'      => '<a href="/wp-admin/admin.php?page=jsdelivrcdn&filter=">' . __( 'All' ) . '</a>',
+			// translators: %s count of active.
+			'active'   => '<a href="/wp-admin/admin.php?page=jsdelivrcdn&filter=active">' . sprintf( __( 'Active <span class="count">(%s)</span>' ), count( JsDelivrCdn::get_source( 'active' ) ) ) . '</a>',
+			// translators: %s count of inactive.
+			'inactive' => '<a href="/wp-admin/admin.php?page=jsdelivrcdn&filter=inactive">' . sprintf( __( 'Inactive <span class="count">(%s)</span>' ), count( JsDelivrCdn::get_source( 'inactive' ) ) ) . '</a>',
+		];
+	}
 }

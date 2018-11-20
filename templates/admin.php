@@ -27,7 +27,7 @@ $jsdelivr_table->prepare_items();
 		</div>
 		<div class="jsdelivrcdn-description-wrapper">
 			<h2><?php echo esc_attr( __( 'About' ) ); ?> jsDelivr</h2>
-			<p class="description">
+			<p class="штащ">
 				jsDelivr CDN is free CDN for open source files that utilizes load-balancing amon multiple CDN providers
 				such as Stackpath, Cloudflare, Fastly and Quantil in China. It results in after website an lower
 				bandwidth usage for you. Learn more about it here
@@ -42,16 +42,13 @@ $jsdelivr_table->prepare_items();
 			</p>
 		</div>
 	</div>
+    <div class="clearfix"></div>
 	<div class="jsdelivrcdn-table-wrapper">
+		<?php $jsdelivr_table->views(); ?>
 		<form id="bulk-action-form" method="post">
 			<?php $jsdelivr_table->display(); ?>
 			<div class="buttons-wrapper">
-				<?php if ( $options[ JsDelivrCdn::ADVANCED_MODE ] ) { ?>
-					<button id="delete_source_list" class="button button-primary"><span class="dashicons dashicons-update spin hidden"></span> Delete All</button>
-					<button id="clear_source_list" class="button button-primary"><span class="dashicons dashicons-update spin hidden"></span> Clear All</button>
-				<?php } ?>
 				<button id="jsdelivr_analyze" class="button button-primary" ><span class="dashicons dashicons-update spin hidden"></span> Analyze</button>
-				<button type="submit" name="submit" id="submit" class="button button-primary" style="float:right" ><span class="dashicons dashicons-update spin hidden"></span> Save Active</button>
 			</div>
 		</form>
 	</div>

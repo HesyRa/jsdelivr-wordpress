@@ -466,7 +466,7 @@ class JsDelivrCdn {
 		add_settings_section( self::PLUGIN_SETTINGS, '', '', 'main_settings' );
 		add_settings_field(
 			self::AUTOENABLE,
-			'Automatically enable<p class="description">' . self::SYNCED_DESCRIPTION . '</p>',
+			'Keep everything synced automaticaly <p class="helper">' . self::SYNCED_DESCRIPTION . '</p>',
 			function() {
 				?>
 				<input id="<?php echo esc_attr( self::AUTOENABLE ); ?>" <?php echo esc_attr( self::$options[ self::AUTOENABLE ] ? 'checked' : '' ); ?>
@@ -478,7 +478,7 @@ class JsDelivrCdn {
 		);
 		add_settings_field(
 			self::ADVANCED_MODE,
-			'Advanced mode<p class="description">' . self::ADVANCED_MODE_DESCRIPTION . '</p>',
+			'Advanced mode<p class="helper">' . self::ADVANCED_MODE_DESCRIPTION . '</p>',
 			function() {
 				?>
 			<input id="<?php echo esc_attr( self::ADVANCED_MODE ); ?>" <?php echo esc_attr( self::$options[ self::ADVANCED_MODE ] ? 'checked' : '' ); ?>
@@ -546,23 +546,6 @@ class JsDelivrCdn {
 	}
 
 	/**
-	 * Clear source by id
-	 *
-	 * @param array $handle_arr array of identifiers.
-	 */
-	public static function clear_sources( $handle_arr ) {
-		if ( ! empty( $handle_arr ) ) {
-			foreach ( $handle_arr as $handle ) {
-				if ( isset( self::$options[ self::SOURCE_LIST ][ $handle ] ) ) {
-					self::$options[ self::SOURCE_LIST ][ $handle ][ self::JSDELIVR_SOURCE_URL ] = '';
-
-				}
-			}
-			update_option( self::PLUGIN_SETTINGS, self::$options );
-		}
-	}
-
-	/**
 	 * Ajax Get saved data
 	 */
 	public static function get_source_list() {
@@ -583,26 +566,43 @@ class JsDelivrCdn {
 	/**
 	 * Get source data
 	 *
+	 * @param string $filter filter name.
 	 * @return array
 	 */
-	public static function get_source() {
+	public static function get_source( $filter = '' ) {
 		$data = [];
+
+		$check_property = '';
+
+		$check_value = '';
+
+		if ( 'active' === $filter ) {
+			$check_property = 'active';
+			$check_value    = true;
+		}
+		if ( 'inactive' === $filter ) {
+			$check_property = 'active';
+			$check_value    = false;
+		}
+
 		foreach ( self::$options[ self::SOURCE_LIST ] as $index => $source ) {
 			if ( time() - $source[ self::SOURCE_LAST_LOADED ] <= 60 * 60 * 24 || self::$options[ self::ADVANCED_MODE ] ) {
 				if ( $source[ self::ORIGINAL_SOURCE_URL ] ) {
-					$arr = [
-						'id'                      => $source['id'],
-						self::ORIGINAL_SOURCE_URL => $source[ self::ORIGINAL_SOURCE_URL ],
-						self::JSDELIVR_SOURCE_URL => $source[ self::JSDELIVR_SOURCE_URL ],
-						'active'                  => $source['active'],
-						'type'                    => $source['type'],
-					];
-					if ( self::$options[ self::ADVANCED_MODE ] ) {
-						$arr['ver'] = $source['handle']->ver;
+					if ( empty( $check_property ) || $check_value === $source[ $check_property ] ) {
+						$arr = [
+							'id'                      => $source['id'],
+							self::ORIGINAL_SOURCE_URL => $source[ self::ORIGINAL_SOURCE_URL ],
+							self::JSDELIVR_SOURCE_URL => $source[ self::JSDELIVR_SOURCE_URL ],
+							'active'                  => $source['active'],
+							'type'                    => $source['type'],
+						];
+						if ( self::$options[ self::ADVANCED_MODE ] ) {
+							$arr['ver'] = $source['handle']->ver;
 
-						$arr['handle'] = $source['handle']->handle;
+							$arr['handle'] = $source['handle']->handle;
+						}
+						$data[] = $arr;
 					}
-					$data[] = $arr;
 				}
 			}
 		}
@@ -783,5 +783,74 @@ class JsDelivrCdn {
 	 */
 	public static function is_advance_mode() {
 		return self::$options[ self::ADVANCED_MODE ];
+	}
+
+	/**
+	 * Clear source by id
+	 * Bulk action 'Clear' selected rows for table
+	 *
+	 * @param array $handle_arr identifiers.
+	 */
+	public static function clear_sources( $handle_arr ) {
+		if ( ! empty( $handle_arr ) ) {
+			foreach ( $handle_arr as $handle ) {
+				if ( isset( self::$options[ self::SOURCE_LIST ][ $handle ] ) ) {
+					self::$options[ self::SOURCE_LIST ][ $handle ][ self::JSDELIVR_SOURCE_URL ] = '';
+
+				}
+			}
+			update_option( self::PLUGIN_SETTINGS, self::$options );
+		}
+	}
+
+	/**
+	 * Remove source by  id
+	 * Bulk action 'Remove' selected rows for table
+	 *
+	 * @param array $handle_arr identifiers.
+	 */
+	public static function remove_sources( $handle_arr ) {
+		if ( ! empty( $handle_arr ) ) {
+			foreach ( $handle_arr as $handle ) {
+				if ( isset( self::$options[ self::SOURCE_LIST ][ $handle ] ) ) {
+					unset( self::$options[ self::SOURCE_LIST ][ $handle ] );
+				}
+			}
+			update_option( self::PLUGIN_SETTINGS, self::$options );
+		}
+	}
+
+	/**
+	 * Activate source by id
+	 * Bulk action 'Activate' selected rows for table
+	 *
+	 * @param array $handle_arr identifiers.
+	 */
+	public static function activate_sources( $handle_arr ) {
+		if ( ! empty( $handle_arr ) ) {
+			foreach ( $handle_arr as $handle ) {
+				if ( isset( self::$options[ self::SOURCE_LIST ][ $handle ] ) ) {
+					self::$options[ self::SOURCE_LIST ][ $handle ]['active'] = true;
+				}
+			}
+			update_option( self::PLUGIN_SETTINGS, self::$options );
+		}
+	}
+
+	/**
+	 * Deactivate source by id
+	 * Bulk action 'Deactivate' selected rows for table
+	 *
+	 * @param array $handle_arr identifiers.
+	 */
+	public static function deactivate_sources( $handle_arr ) {
+		if ( ! empty( $handle_arr ) ) {
+			foreach ( $handle_arr as $handle ) {
+				if ( isset( self::$options[ self::SOURCE_LIST ][ $handle ] ) ) {
+					self::$options[ self::SOURCE_LIST ][ $handle ]['active'] = false;
+				}
+			}
+			update_option( self::PLUGIN_SETTINGS, self::$options );
+		}
 	}
 }

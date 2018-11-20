@@ -38,6 +38,21 @@
 	float: left;
 	margin-right: 40px;
 	background: #fff;
+	width: 38%;
+	margin-bottom: 20px;
+}
+
+.jsdelivrcdn-settings-wrapper .form-table th {
+	width: auto;
+}
+
+.jsdelivrcdn-settings-wrapper .form-table td {
+	vertical-align: top;
+}
+
+.jsdelivrcdn-settings-wrapper .helper {
+	font-weight: 400;
+	margin: 0;
 }
 
 .jsdelivrcdn-description-wrapper {
@@ -53,4 +68,14 @@
 
 .jsdelivrcdn-settings-form {
 	padding: 0 20px;
+}
+
+.jsdelivrcdn-description-wrapper p.description {
+	font-weight: 400;
+	font-style: normal;
+	margin-bottom: 20px;
+}
+
+.clearfix {
+	clear: both;
 }
