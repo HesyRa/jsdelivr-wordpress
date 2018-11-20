@@ -42,7 +42,7 @@ $jsdelivr_table->prepare_items();
 			</p>
 		</div>
 	</div>
-    <div class="clearfix"></div>
+	<div class="clearfix"></div>
 	<div class="jsdelivrcdn-table-wrapper">
 		<?php $jsdelivr_table->views(); ?>
 		<form id="bulk-action-form" method="post">

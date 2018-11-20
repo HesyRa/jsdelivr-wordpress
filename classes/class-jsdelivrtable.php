@@ -62,20 +62,7 @@ class JsdelivrTable extends WP_List_Table {
 	public function column_default( $item, $column_name ) {
 
 		switch ( $column_name ) {
-			/*case 'original_url':
-				// @TODO Fix action link, its broken
-				$show_action = 'activate';
 
-				$actions = [
-					'deactivate' => sprintf( '<span class="deactivate"><a href="?page=%s&action=%s&source_list[]=%s">%s</a></span>', 'jsdelivrcdn', 'deactivate', $item['id'], __( 'Deactivate' ) ),
-					'activate'   => sprintf( '<span class="activate"><a href="?page=%s&action=%s&id=%s">%s</a></span>', 'jsdelivrcdn', 'activate', $item['id'], __( 'Activate' ) ),
-				];
-
-				if ( $item['active'] ) {
-					$show_action = 'deactivate';
-				}
-
-				return sprintf( '<strong>%s</strong><div class="row-actions visible">%s</div>', $item[ $column_name ], $actions[ $show_action ] );*/
 			default:
 				return $item[ $column_name ];
 		}
@@ -132,7 +119,8 @@ class JsdelivrTable extends WP_List_Table {
 		}
 		$handle_arr = [];
 		if ( isset( $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) && ! empty( $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) ) {
-			$handle_arr =  array_map( 'sanitize_text_field', array_map( 'wp_unslash', $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) );
+			// @codingStandardsIgnoreLine
+			$handle_arr = array_map( 'sanitize_text_field', array_map( 'wp_unslash', $_REQUEST[ JsDelivrCdn::SOURCE_LIST ] ) );
 		}
 
 		if ( $action && ! empty( $handle_arr ) ) {
